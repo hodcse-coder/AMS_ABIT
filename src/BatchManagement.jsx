@@ -1,0 +1,36 @@
+import React,{useState} from 'react';
+import { api } from './Erp.jsx';
+import { Icon } from './DashboardOverview.jsx';
+import MessageDialog,{useConfirm,validationMessage} from './MessageDialog.jsx';
+import './batch-management.css';
+const dateLabel=value=>value?value.slice(0,10).split('-').reverse().join('-'):'Not Set';
+export default function BatchManagement({courses,batches,loading,onRefresh,initialCourseId}){
+ const [values,setValues]=useState({batch_course_id:initialCourseId||''});
+ const [editing,setEditing]=useState(null),[filters,setFilters]=useState({course_id:initialCourseId||''});
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const {confirm,confirmation}=useConfirm();
+ const input=(key,value)=>setValues(previous=>({...previous,[key]:value}));
+ function reset(){setEditing(null);setValues({batch_course_id:initialCourseId||''});}
+ function edit(batch){setEditing(batch.batch_id);setValues({batch_name:batch.batch_name,batch_course_id:batch.batch_course_id,batch_alias:batch.batch_alias,start_date:batch.start_date||'',end_date:batch.end_date||'',is_status:batch.is_status});document.querySelector('.batch-design-editor')?.scrollIntoView({behavior:'smooth',block:'start'});}
+ async function save(event){event.preventDefault();setBusy(true);try{await api(`/api/admin/course-modules/batches${editing?`/${editing}`:''}`,{method:editing?'PATCH':'POST',body:JSON.stringify(values)});await onRefresh();reset();setMessage(editing?'Batch updated successfully.':'Batch created successfully.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ async function eligibility(batch,key,value){setBusy(true);try{await api(`/api/admin/course-modules/batches/${batch.batch_id}/settings`,{method:'PATCH',body:JSON.stringify({[key]:Number(value)})});await onRefresh();setMessage('Survey eligibility updated.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ async function remove(batch){if(!await confirm(`Delete ${batch.batch_name}? Batches with linked sections or students cannot be deleted.`))return;setBusy(true);try{await api(`/api/admin/course-modules/batches/${batch.batch_id}`,{method:'DELETE'});await onRefresh();if(editing===batch.batch_id)reset();setMessage('Batch deleted.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ const visible=batches.filter(batch=>(!filters.course_id||String(batch.course_id)===String(filters.course_id))&&['batch_name','batch_alias','start_date','end_date'].every(key=>!filters[key]||String(key.endsWith('_date')?dateLabel(batch[key]):batch[key]||'').toLowerCase().includes(filters[key].toLowerCase())));
+ const filter=(key,label)=><input aria-label={`Filter ${label}`} value={filters[key]||''} onChange={event=>setFilters(previous=>({...previous,[key]:event.target.value}))}/>;
+ const textField=(name,label,max)=><label className={name==='batch_name'?'batch-full':''}>{label} *<input required maxLength={max} placeholder={label} value={values[name]||''} onChange={event=>input(name,event.target.value.toUpperCase())}/></label>;
+ return <div className="batch-management">{confirmation}<MessageDialog message={message} onDismiss={()=>setMessage('')}/>
+  <section className="batch-design-editor"><h2>{editing?'Edit':'Add'} Batch</h2><form onSubmit={save} onInvalid={event=>validationMessage(event,setMessage)}><fieldset disabled={busy||loading}><div className="batch-design-fields">
+   {textField('batch_name','Batch Name',120)}
+   <label>Course *<select required value={values.batch_course_id||''} onChange={event=>input('batch_course_id',event.target.value)}><option value="">--- Select Course ---</option>{courses.map(course=><option key={course.course_id} value={course.course_id}>{course.course_name}</option>)}</select></label>
+   {textField('batch_alias','Batch Alias',35)}
+   <label>Start Date *<input type="date" required value={values.start_date||''} onChange={event=>input('start_date',event.target.value)}/></label>
+   <label>End Date *<input type="date" required min={values.start_date||undefined} value={values.end_date||''} onChange={event=>input('end_date',event.target.value)}/></label>
+   {editing&&<label>Status<select value={values.is_status??1} onChange={event=>input('is_status',Number(event.target.value))}><option value="1">Active</option><option value="0">Inactive</option></select></label>}
+  </div><div className="batch-design-actions"><button type="submit">{busy?'Saving…':editing?'Update':'Create'}</button><button type="button" onClick={reset}>Cancel</button></div></fieldset></form></section>
+  <section className="batch-list"><h2>Manage Batches</h2><div className="batch-table-wrap table-scroll"><table><thead><tr><th>#</th><th>Batch Name</th><th>Batch Alias</th><th>Course</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Is Eligible for Alumni Survey</th><th>Is Eligible for Exit Survey</th><th>Actions</th></tr><tr><th/>
+   <th>{filter('batch_name','Batch Name')}</th><th>{filter('batch_alias','Batch Alias')}</th><th><select aria-label="Filter Course" value={filters.course_id||''} onChange={event=>setFilters(previous=>({...previous,course_id:event.target.value}))}><option value="">All courses</option>{courses.map(course=><option key={course.course_id} value={course.course_id}>{course.course_name}</option>)}</select></th><th>{filter('start_date','Start Date')}</th><th>{filter('end_date','End Date')}</th><th/><th/><th/><th><button className="batch-clear" onClick={()=>setFilters({})}>Clear</button></th></tr></thead><tbody>
+   {visible.map((batch,index)=><tr key={batch.batch_id}><td>{index+1}</td><td>{batch.batch_name}</td><td>{batch.batch_alias}</td><td>{batch.course_name}</td><td>{dateLabel(batch.start_date)}</td><td>{dateLabel(batch.end_date)}</td><td><span className={batch.is_status===1?'batch-status-active':'batch-status-inactive'} role="img" aria-label={batch.is_status===1?'Active':'Inactive'} title={batch.is_status===1?'Active':'Inactive'}><Icon name={batch.is_status===1?'check':'lock'} size={21}/></span></td>{['is_eligible_alumnisurvey','is_eligible_exitsurvey'].map((key,idx)=><td key={key}><select className={`batch-eligibility ${batch[key]===1?'eligible':'not-eligible'}`} aria-label={`${idx===0?'Alumni':'Exit'} survey eligibility for ${batch.batch_name}`} disabled={busy} value={batch[key]} onChange={event=>eligibility(batch,key,event.target.value)}><option value="1">Eligible</option><option value="0">Not Eligible</option></select></td>)}<td><div className="batch-row-actions"><button title="View" aria-label={`View ${batch.batch_name}`} onClick={()=>setMessage(`${batch.batch_name}\nAlias: ${batch.batch_alias}\nCourse: ${batch.course_name}\nStart Date: ${dateLabel(batch.start_date)}\nEnd Date: ${dateLabel(batch.end_date)}\nStatus: ${batch.is_status===1?'Active':'Inactive'}`)}><Icon name="view" size={16}/></button><button title="Edit" aria-label={`Edit ${batch.batch_name}`} onClick={()=>edit(batch)}><Icon name="edit" size={16}/></button><button title="Delete" aria-label={`Delete ${batch.batch_name}`} disabled={busy} onClick={()=>remove(batch)}><Icon name="delete" size={16}/></button></div></td></tr>)}
+   {!visible.length&&<tr><td colSpan="10">{loading?'Loading batches…':batches.length?'No matching batches.':'No batches yet.'}</td></tr>}
+  </tbody></table></div></section>
+ </div>;
+}

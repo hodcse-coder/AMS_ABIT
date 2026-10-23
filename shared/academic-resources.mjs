@@ -1,0 +1,9 @@
+﻿export const academicResources=[
+ {key:'preferred-books',label:'Preferred Books',table:'faculty_books',id:'book_id',columns:[['book_id','ID'],['subject_name','Subject'],['faculty_name','Faculty'],['book_name','Book Name']]},
+ {key:'course-outcome',label:'Course Outcome',table:'courseoutcome',id:'co_id',columns:[['co_id','ID'],['subject_name','Subject'],['cotype','Outcome'],['codescription','Description']]},
+ {key:'lesson-plan',label:'Lesson Plan',table:'lessonplans',id:'lessonplan_id',columns:[['lessonplan_id','ID'],['subject_name','Subject'],['module','Module'],['topics','Topics'],['bookname','Book'],['co','Course Outcome']]},
+ {key:'lecture-notes',label:'Lecture Notes',table:'lecture_notes',id:'id',columns:[['id','ID'],['subject_name','Subject'],['faculty_name','Faculty'],['sem','Semester'],['description','Description'],['attachment','Attachment']]},
+ {key:'note-upload-report',label:'e-Note Upload Report',table:'lecture_note_upload_report',id:'id',columns:[['id','Sl.'],['faculty_name','Faculty Name'],['subject_name','Subject'],['sem','Semester'],['description','Lecture Note Description'],['file_name','File Name'],['file_status','Status']]},
+ {key:'video-lecture',label:'Video Lecture',table:'videolecture',id:'l_id',columns:[['l_id','ID'],['subject_name','Subject'],['brief_description','Description'],['video_url','Video URL'],['is_status','Status']]},
+ ...['take-attendance','student-attendance'].map((key,index)=>({key,label:index?'Student Attendance':'Take Attendance',table:index?'student_attendance_summary':'student_attendance',id:index?'id':'student_attendance_id',columns:[['student_attendance_date','Date'],['student_name','Student'],['subject_name','Subject'],['student_attendance_classstarttime','Start Time'],['student_attendance_classendtime','End Time'],['student_attendance_present_absent','Present / Absent']]}))
+];

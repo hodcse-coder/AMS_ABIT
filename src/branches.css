@@ -1,0 +1,9 @@
+﻿.branches-page{max-width:1100px}.branch-heading{border-bottom:0;padding-bottom:12px;margin-bottom:16px}.erp .branch-heading h2{font-size:17px;font-weight:500;margin:0 0 5px;color:#c62828}.branch-heading p{font-size:11px;margin:0;color:#647383}.branches-page .branch-status{border:0;padding:0;margin:0}.branch-status legend{font-size:11px;margin-bottom:8px;color:#000}.branch-status label{display:inline-flex;align-items:center;gap:7px;margin-right:20px;color:#000;font-size:12px}.branch-status input{accent-color:#111}.branch-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.branches-page .academic-list{border-top:0;padding-top:8px}.branches-page .academic-table{border:0;padding:0}.erp .branches-page .branch-active{color:#008d36}.erp .branches-page .branch-inactive{color:#c62828}.erp .branch-edit{border:1px solid #ddd;background:#fafafa;color:#16804c;border-radius:999px;padding:4px 12px;font-size:11px}@media(max-width:600px){.branch-filters{grid-template-columns:1fr}}
+
+.branches-page .subject-fields>.subject-wide{grid-column:1/-1}
+
+.branches-page .branch-column-filters .academic-control{height:26px;margin:0;min-width:80px;font-size:10px;padding:4px 10px}.branches-page .branch-column-filters th:nth-child(3){min-width:160px}.erp .branches-page .branch-filter-clear{background:none;border:0;color:#8b1e2d;font-size:10px;font-weight:600;padding:4px 0}
+
+.erp .branches-page form .academic-buttons .academic-primary,.erp .branches-page form .academic-buttons .academic-primary:disabled{background:#c62828;border-color:#c62828;color:#fff}.erp .branches-page form .academic-buttons .academic-primary:not(:disabled):hover{background:#a92020;border-color:#a92020}
+
+.erp .branches-page .branch-edit{display:grid;place-items:center;width:29px;height:28px;padding:5px;border:1px solid currentColor;border-radius:5px;background:#edf8f0;color:#16804c}

@@ -1,0 +1,23 @@
+{
+  "name": "abit-academic-management",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env server/index.mjs",
+    "dev": "node --env-file=.env server/index.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "db:check": "node --env-file-if-exists=.env scripts/check-db.mjs",
+    "db:setup": "node --env-file=.env scripts/setup-db.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

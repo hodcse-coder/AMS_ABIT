@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
+import { pool } from '../server/db.mjs';
+import { hashPassword } from '../server/passwords.mjs';
+const base=process.env.TEST_URL||'http://127.0.0.1:3000',root='/api/admin/course-modules';
+const suffix=randomBytes(5).toString('hex'),users=[];
+async function request(path,{cookie,data,...options}={}){return fetch(base+path,{...options,headers:{Origin:base,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},...(data?{body:JSON.stringify(data)}:{})});}
+async function login(role){const username=`test_course_${role}_${suffix}`,password=randomBytes(18).toString('hex');const result=await pool.query('INSERT INTO users(role_id,username,password_hash,full_name) SELECT role_id,$1,$2,$3 FROM user_roles WHERE role_name=$4 RETURNING user_id',[username,await hashPassword(password),'Course test',role]);users.push(result.rows[0].user_id);const response=await request('/api/login',{method:'POST',data:{username,password,role}});assert.equal(response.status,200);return response.headers.get('set-cookie').split(';')[0];}
+try{
+ assert.equal((await request(root)).status,401);
+ const cookie=await login('Admin'),faculty=await login('Faculty');assert.equal((await request(root,{cookie:faculty})).status,403);
+ const data={course_name:`Test ${suffix}`,course_code:`T${suffix}`,course_alias:`Alias ${suffix}`,course_duration:4,batch_name:`Batch ${suffix}`,batch_alias:`B${suffix}`,start_date:'2026-07-01',end_date:'2030-06-30',section_name:'Section a',intake:60};
+ for(const invalid of [{...data,course_alias:''},{...data,course_duration:0},{...data,start_date:'2026-02-30'},{...data,end_date:'2025-06-30'},{...data,section_name:'',intake:10}])assert.equal((await request(root+'/courses',{cookie,method:'POST',data:invalid})).status,400);
+ const result=await request(root+'/courses',{cookie,method:'POST',data});assert.equal(result.status,201,await result.clone().text());const saved=await result.json();
+ let overview=await(await request(root,{cookie})).json();const course=overview.courses.find(row=>row.course_id===saved.id);assert.equal(course.course_alias,data.course_alias.toUpperCase());assert.equal(course.course_duration,4);assert.equal(course.batch_count,1);assert.equal(course.student_count,0);
+ const initialBatch=overview.batches.find(row=>row.batch_id===saved.batch_id);assert.equal(initialBatch.batch_alias,data.batch_alias.toUpperCase());assert.equal(initialBatch.start_date,data.start_date);assert.equal(initialBatch.end_date,data.end_date);
+ const section=overview.sections.find(row=>row.section_id===saved.section_id);assert.equal(section.intake,60);assert.equal(section.section_name,'SECTION A');
+ assert.equal((await request(root+'/courses',{cookie,method:'POST',data})).status,409);
+ const failed={...data,course_name:`Rollback ${suffix}`,course_code:`R${suffix}`};assert.equal((await request(root+'/courses',{cookie,method:'POST',data:failed})).status,409);
+ assert.equal((await pool.query('SELECT 1 FROM courses WHERE course_code=$1',[failed.course_code.toUpperCase()])).rowCount,0);
+ assert.equal((await request(root+'/batches',{cookie,method:'POST',data:{course_id:saved.id,batch_name:'Second batch',batch_alias:`SECOND${suffix}`,start_date:'2027-07-01',end_date:'2031-06-30'}})).status,201);
+ assert.equal((await request(root+'/sections',{cookie,method:'POST',data:{batch_id:saved.batch_id,section_name:'B',intake:30}})).status,201);
+ const update={...data,course_name:`Updated ${suffix}`,is_active:false};assert.equal((await request(`${root}/courses/${saved.id}`,{cookie,method:'PATCH',data:update})).status,200);
+ overview=await(await request(root,{cookie})).json();const edited=overview.courses.find(row=>row.course_id===saved.id);assert.equal(edited.is_active,false);assert.equal(edited.is_status,0);assert.equal(edited.batch_count,2);
+ assert.equal((await request(`${root}/courses/${saved.id}`,{cookie,method:'DELETE'})).status,409);
+ const secondBatch=overview.batches.find(row=>row.batch_course_id===saved.id&&row.batch_id!==saved.batch_id);
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}/settings`,{cookie:faculty,method:'PATCH',data:{is_eligible_alumnisurvey:0}})).status,403);
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}/settings`,{cookie,method:'PATCH',data:{is_eligible_alumnisurvey:0,is_eligible_exitsurvey:0}})).status,200);
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}/settings`,{cookie,method:'PATCH',data:{is_eligible_alumnisurvey:2}})).status,400);
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}/settings`,{cookie,method:'PATCH',data:{created_by:0}})).status,400);
+ const batchEdit={batch_name:'Edited batch',batch_alias:`EDIT${suffix}`,batch_course_id:saved.id,start_date:'2027-08-01',end_date:'2031-07-31',is_status:0};
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}`,{cookie,method:'PATCH',data:batchEdit})).status,200);
+ overview=await(await request(root,{cookie})).json();const editedBatch=overview.batches.find(row=>row.batch_id===secondBatch.batch_id);
+ assert.equal(editedBatch.batch_name,'EDITED BATCH');assert.equal(editedBatch.is_status,0);assert.equal(editedBatch.is_eligible_alumnisurvey,0);assert.equal(editedBatch.is_eligible_exitsurvey,0);assert.equal(editedBatch.start_date,batchEdit.start_date);assert.ok(editedBatch.updated_at);assert.equal(editedBatch.updated_by,users[0]);
+ assert.equal((await request(`${root}/batches/${saved.batch_id}`,{cookie,method:'DELETE'})).status,409);
+ assert.equal((await request(`${root}/batches/${secondBatch.batch_id}`,{cookie,method:'DELETE'})).status,200);
+ assert.equal((await request(`${root}/courses/${saved.id}/students`,{cookie})).status,200);
+ const optional={...data,course_name:`Optional ${suffix}`,course_code:`O${suffix}`,batch_alias:`O${suffix}`,section_name:'',intake:''};const optionalResult=await request(root+'/courses',{cookie,method:'POST',data:optional});assert.equal(optionalResult.status,201);assert.equal((await optionalResult.json()).section_id,null);
+ const master=(await pool.query('INSERT INTO section_master(section_master_name,created_by,is_status) VALUES($1,$2,1) RETURNING section_master_id',[`MASTER ${suffix}`,users[0]])).rows[0].section_master_id;
+ const masterList=await(await request(root+'/section-masters',{cookie})).json();assert.ok(masterList.masters.some(row=>row.section_master_id===master));
+ const definitionResponse=await request(root+'/section-definitions',{cookie,method:'POST',data:{section_name:'Computer science',section_master:master,rel_course:saved.id,rel_coursefecth:saved.id}});assert.equal(definitionResponse.status,201);const definitionId=(await definitionResponse.json()).id;
+ assert.equal((await request(root+'/assignments',{cookie:faculty})).status,403);
+ const definitions=await(await request(root+'/section-definitions',{cookie})).json();const definition=definitions.definitions.find(row=>row.sid===definitionId);assert.equal(definition.section_master,master);assert.equal(definition.admission_course_name,update.course_name.toUpperCase());assert.equal(definition.assigned_course_name,update.course_name.toUpperCase());
+ assert.equal((await request(root+'/section-definitions',{cookie,method:'POST',data:{section_name:'Invalid master',section_master:2147483647}})).status,400);
+ const assignmentInput={definition_id:definitionId,batch_id:saved.batch_id,intake:60};
+ const assigned=await request(root+'/assignments',{cookie,method:'POST',data:assignmentInput});assert.equal(assigned.status,201);const assignmentId=(await assigned.json()).id;
+ assert.equal((await request(root+'/assignments',{cookie,method:'POST',data:assignmentInput})).status,409);
+ assert.equal((await request(root+'/assignments',{cookie,method:'POST',data:{...assignmentInput,intake:-1}})).status,400);
+ const assignmentRows=await(await request(root+'/assignments',{cookie})).json();const assignment=assignmentRows.assignments.find(row=>row.assignment_id===assignmentId);assert.equal(assignment.section_name,'COMPUTER SCIENCE');assert.equal(assignment.intake,60);assert.equal(assignment.is_status,1);
+ assert.equal((await request(`${root}/assignments/${assignmentId}`,{cookie,method:'PATCH',data:{...assignmentInput,intake:0,is_status:0}})).status,200);
+ const updatedAssignments=await(await request(root+'/assignments',{cookie})).json();assert.equal(updatedAssignments.assignments.find(row=>row.assignment_id===assignmentId).intake,0);assert.equal(updatedAssignments.assignments.find(row=>row.assignment_id===assignmentId).is_status,0);
+ assert.equal((await request(`${root}/section-definitions/${definitionId}`,{cookie,method:'DELETE'})).status,409);
+ assert.equal((await request(`${root}/section-definitions/${definitionId}`,{cookie,method:'PATCH',data:{section_name:'Updated section',section_master:master,rel_course:saved.id,rel_coursefecth:saved.id}})).status,200);
+ const renamedAssignments=await(await request(root+'/assignments',{cookie})).json();assert.equal(renamedAssignments.assignments.find(row=>row.assignment_id===assignmentId).section_name,'UPDATED SECTION');
+ const otherCourse=(await pool.query('SELECT course_id FROM courses WHERE course_code=$1',[optional.course_code.toUpperCase()])).rows[0].course_id;
+ const otherBatch=(await pool.query('SELECT batch_id FROM batches WHERE batch_course_id=$1',[otherCourse])).rows[0].batch_id;
+ assert.equal((await request(root+'/assignments',{cookie,method:'POST',data:{...assignmentInput,batch_id:otherBatch}})).status,400);
+ assert.equal((await request(`${root}/assignments/${assignmentId}`,{cookie,method:'DELETE'})).status,200);
+ assert.equal((await request(`${root}/section-definitions/${definitionId}`,{cookie,method:'DELETE'})).status,200);
+ assert.equal((await request(`${root}/section-definitions/${definitionId}`,{cookie,method:'DELETE'})).status,404);
+ const tables=await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['courses','batches','section','section_defined','section_master','subjects']]);assert.equal(tables.rowCount,6);
+ console.log('PASS: Source-aligned tables, course/batch/section transaction, optional section, dates, rollback on duplicate batch, uppercase storage, course edits, counts, batch edits, eligibility settings, delete protection section assignments, dropdown definitions, course/batch validation and Admin authorization.');
+}finally{
+ const courseIds=(await pool.query('SELECT course_id FROM courses WHERE created_by=ANY($1::bigint[])',[users])).rows.map(row=>row.course_id);
+ await pool.query('DELETE FROM section WHERE section_batch_id IN (SELECT batch_id FROM batches WHERE batch_course_id=ANY($1::bigint[]))',[courseIds]);await pool.query('DELETE FROM batches WHERE batch_course_id=ANY($1::bigint[])',[courseIds]);await pool.query('DELETE FROM section_defined WHERE rel_course=ANY($1::bigint[])',[courseIds]);await pool.query('DELETE FROM courses WHERE course_id=ANY($1::bigint[])',[courseIds]);await pool.query('DELETE FROM section_master WHERE created_by=ANY($1::bigint[])',[users]);await pool.query('DELETE FROM users WHERE user_id=ANY($1::bigint[])',[users]);await pool.end();
+}

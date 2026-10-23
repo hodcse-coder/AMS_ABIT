@@ -1,0 +1,404 @@
+const React = __vite__cjsImport0_react; const useEffect = __vite__cjsImport0_react["useEffect"]; const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport5_react_jsxDevRuntime["jsxDEV"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=2b4bff87";
+import { api } from "/src/Erp.jsx";
+import { Icon } from "/src/DashboardOverview.jsx";
+import MessageDialog, { useConfirm, validationMessage } from "/src/MessageDialog.jsx";
+import "/src/section-master.css";
+var _jsxFileName = "C:/AMS_ABIT/src/SectionMaster.jsx";
+import __vite__cjsImport5_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=3318ba4b";
+export default function SectionMaster() {
+	const [rows, setRows] = useState([]), [values, setValues] = useState({}), [editing, setEditing] = useState(null);
+	const [query, setQuery] = useState(""), [ascending, setAscending] = useState(true), [message, setMessage] = useState("");
+	const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true);
+	const { confirm, confirmation } = useConfirm();
+	const refresh = () => api("/api/admin/course-modules/section-masters").then((data) => setRows(data.masters));
+	useEffect(() => {
+		refresh().catch((error) => setMessage(error.message)).finally(() => setLoading(false));
+	}, []);
+	function cancel() {
+		setValues({});
+		setEditing(null);
+	}
+	async function save(event) {
+		event.preventDefault();
+		setBusy(true);
+		try {
+			await api(`/api/admin/course-modules/section-masters${editing ? `/${editing}` : ""}`, {
+				method: editing ? "PATCH" : "POST",
+				body: JSON.stringify(values)
+			});
+			await refresh();
+			cancel();
+			setMessage(editing ? "Section Master updated." : "Section Master created.");
+		} catch (error) {
+			setMessage(error.message);
+		} finally {
+			setBusy(false);
+		}
+	}
+	async function remove(row) {
+		if (!await confirm(`Delete Section Master ${row.section_master_name}? Masters used by Sections cannot be deleted.`)) return;
+		setBusy(true);
+		try {
+			await api(`/api/admin/course-modules/section-masters/${row.section_master_id}`, { method: "DELETE" });
+			await refresh();
+			if (editing === row.section_master_id) cancel();
+			setMessage("Section Master deleted.");
+		} catch (error) {
+			setMessage(error.message);
+		} finally {
+			setBusy(false);
+		}
+	}
+	function edit(row) {
+		setEditing(row.section_master_id);
+		setValues({
+			section_master_name: row.section_master_name,
+			is_status: row.is_status
+		});
+		document.querySelector(".section-master-editor")?.scrollIntoView({
+			behavior: "smooth",
+			block: "start"
+		});
+	}
+	const visible = rows.filter((row) => String(row.section_master_name || "").toLowerCase().includes(query.toLowerCase())).sort((a, b) => (ascending ? 1 : -1) * String(a.section_master_name).localeCompare(String(b.section_master_name)));
+	return /* @__PURE__ */ _jsxDEV("div", {
+		className: "section-master-page",
+		children: [
+			confirmation,
+			/* @__PURE__ */ _jsxDEV(MessageDialog, {
+				message,
+				onDismiss: () => setMessage("")
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 18,
+				columnNumber: 60
+			}, this),
+			/* @__PURE__ */ _jsxDEV("section", {
+				className: "section-master-editor",
+				children: [/* @__PURE__ */ _jsxDEV("h2", { children: [editing ? "Edit" : "Add", " Section Master"] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 19,
+					columnNumber: 46
+				}, this), /* @__PURE__ */ _jsxDEV("form", {
+					onSubmit: save,
+					onInvalid: (event) => validationMessage(event, setMessage),
+					children: /* @__PURE__ */ _jsxDEV("fieldset", {
+						disabled: busy || loading,
+						children: [
+							/* @__PURE__ */ _jsxDEV("label", { children: ["Section Master Name *", /* @__PURE__ */ _jsxDEV("input", {
+								required: true,
+								maxLength: 50,
+								placeholder: "Section Master Name",
+								value: values.section_master_name || "",
+								onChange: (event) => setValues((previous) => ({
+									...previous,
+									section_master_name: event.target.value.toUpperCase()
+								}))
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 19,
+								columnNumber: 232
+							}, this)] }, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 19,
+								columnNumber: 204
+							}, this),
+							editing && /* @__PURE__ */ _jsxDEV("label", {
+								className: "master-status-field",
+								children: ["Status", /* @__PURE__ */ _jsxDEV("select", {
+									value: values.is_status ?? 1,
+									onChange: (event) => setValues((previous) => ({
+										...previous,
+										is_status: Number(event.target.value)
+									})),
+									children: [/* @__PURE__ */ _jsxDEV("option", {
+										value: "1",
+										children: "Active"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 19,
+										columnNumber: 636
+									}, this), /* @__PURE__ */ _jsxDEV("option", {
+										value: "0",
+										children: "Inactive"
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 19,
+										columnNumber: 669
+									}, this)]
+								}, void 0, true, {
+									fileName: _jsxFileName,
+									lineNumber: 19,
+									columnNumber: 508
+								}, this)]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 19,
+								columnNumber: 463
+							}, this),
+							/* @__PURE__ */ _jsxDEV("div", {
+								className: "section-master-form-actions",
+								children: [/* @__PURE__ */ _jsxDEV("button", { children: busy ? "Saving…" : editing ? "Update" : "Create" }, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 19,
+									columnNumber: 767
+								}, this), /* @__PURE__ */ _jsxDEV("button", {
+									type: "button",
+									onClick: cancel,
+									children: "Cancel"
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 19,
+									columnNumber: 826
+								}, this)]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 19,
+								columnNumber: 722
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 19,
+						columnNumber: 169
+					}, this)
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 19,
+					columnNumber: 92
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 19,
+				columnNumber: 3
+			}, this),
+			/* @__PURE__ */ _jsxDEV("section", {
+				className: "section-master-list",
+				children: [/* @__PURE__ */ _jsxDEV("h2", { children: "Section Master" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 20,
+					columnNumber: 44
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "section-master-table table-scroll",
+					children: /* @__PURE__ */ _jsxDEV("table", { children: [/* @__PURE__ */ _jsxDEV("thead", { children: [/* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("th", { children: "#" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 136
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", {
+							"aria-sort": ascending ? "ascending" : "descending",
+							children: /* @__PURE__ */ _jsxDEV("button", {
+								className: "master-sort",
+								onClick: () => setAscending((value) => !value),
+								children: ["Section Master Name ", ascending ? "↧" : "↥"]
+							}, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 20,
+								columnNumber: 197
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 146
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Status" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 324
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Actions" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 339
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 132
+					}, this), /* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("th", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 364
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: /* @__PURE__ */ _jsxDEV("input", {
+							"aria-label": "Filter Section Master Name",
+							value: query,
+							onChange: (event) => setQuery(event.target.value)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 373
+						}, this) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 369
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", {}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 487
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: /* @__PURE__ */ _jsxDEV("button", {
+							className: "master-clear",
+							onClick: () => setQuery(""),
+							children: "Clear"
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 496
+						}, this) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 492
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 360
+					}, this)] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 125
+					}, this), /* @__PURE__ */ _jsxDEV("tbody", { children: [visible.map((row, index) => /* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("td", { children: index + 1 }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 653
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: row.section_master_name }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 671
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: /* @__PURE__ */ _jsxDEV("span", {
+							className: row.is_status === 1 ? "master-active" : "master-inactive",
+							role: "img",
+							"aria-label": row.is_status === 1 ? "Active" : "Inactive",
+							children: /* @__PURE__ */ _jsxDEV(Icon, {
+								name: row.is_status === 1 ? "check" : "lock",
+								size: 21
+							}, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 20,
+								columnNumber: 841
+							}, this)
+						}, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 709
+						}, this) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 705
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: /* @__PURE__ */ _jsxDEV("div", {
+							className: "section-master-row-actions",
+							children: [
+								/* @__PURE__ */ _jsxDEV("button", {
+									title: "View",
+									"aria-label": `View ${row.section_master_name}`,
+									onClick: () => setMessage(`Section Master: ${row.section_master_name}\nStatus: ${row.is_status === 1 ? "Active" : "Inactive"}`),
+									children: /* @__PURE__ */ _jsxDEV(Icon, {
+										name: "view",
+										size: 16
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 20,
+										columnNumber: 1147
+									}, this)
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 20,
+									columnNumber: 958
+								}, this),
+								/* @__PURE__ */ _jsxDEV("button", {
+									title: "Edit",
+									"aria-label": `Edit ${row.section_master_name}`,
+									disabled: busy,
+									onClick: () => edit(row),
+									children: /* @__PURE__ */ _jsxDEV(Icon, {
+										name: "edit",
+										size: 16
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 20,
+										columnNumber: 1293
+									}, this)
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 20,
+									columnNumber: 1185
+								}, this),
+								/* @__PURE__ */ _jsxDEV("button", {
+									title: "Delete",
+									"aria-label": `Delete ${row.section_master_name}`,
+									disabled: busy,
+									onClick: () => remove(row),
+									children: /* @__PURE__ */ _jsxDEV(Icon, {
+										name: "delete",
+										size: 16
+									}, void 0, false, {
+										fileName: _jsxFileName,
+										lineNumber: 20,
+										columnNumber: 1445
+									}, this)
+								}, void 0, false, {
+									fileName: _jsxFileName,
+									lineNumber: 20,
+									columnNumber: 1331
+								}, this)
+							]
+						}, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 914
+						}, this) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 20,
+							columnNumber: 910
+						}, this)
+					] }, row.section_master_id, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 621
+					}, this)), !visible.length && /* @__PURE__ */ _jsxDEV("tr", { children: /* @__PURE__ */ _jsxDEV("td", {
+						colSpan: "4",
+						children: loading ? "Loading section masters…" : rows.length ? "No matching section masters." : "No section masters yet."
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 1525
+					}, this) }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 1521
+					}, this)] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 588
+					}, this)] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 118
+					}, this)
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 20,
+					columnNumber: 67
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 20,
+				columnNumber: 3
+			}, this)
+		]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 18,
+		columnNumber: 9
+	}, this);
+}
+
+//# sourceMappingURL=data:application/json;base64,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b0JBQW9CLFlBQVksSUFBSSxjQUFZLElBQUUsV0FBUyxZQUFZO21CQUFHLHdCQUFDLE1BQUQ7VUFBTSxNQUFLO1VBQU8sTUFBTTtTQUFJOzs7OztRQUFTOzs7OztRQUFDLHdCQUFDLFVBQUQ7U0FBUSxPQUFNO1NBQU8sY0FBWSxRQUFRLElBQUk7U0FBdUIsVUFBVTtTQUFNLGVBQWEsS0FBSyxHQUFHO21CQUFHLHdCQUFDLE1BQUQ7VUFBTSxNQUFLO1VBQU8sTUFBTTtTQUFJOzs7OztRQUFTOzs7OztRQUFDLHdCQUFDLFVBQUQ7U0FBUSxPQUFNO1NBQVMsY0FBWSxVQUFVLElBQUk7U0FBdUIsVUFBVTtTQUFNLGVBQWEsT0FBTyxHQUFHO21CQUFHLHdCQUFDLE1BQUQ7VUFBTSxNQUFLO1VBQVMsTUFBTTtTQUFJOzs7OztRQUFTOzs7OztPQUFNOzs7OztlQUFLOzs7OztLQUFLLEtBQXQyQixJQUFJOzs7O1lBQWsyQixDQUFDLEdBQUcsQ0FBQyxRQUFRLFVBQVEsd0JBQUMsTUFBRCxZQUFJLHdCQUFDLE1BQUQ7TUFBSSxTQUFRO2dCQUFLLFVBQVEsNkJBQTJCLEtBQUssU0FBTyxpQ0FBK0I7S0FBOEI7Ozs7Y0FBSzs7OzthQUFTOzs7O2FBQVE7Ozs7O0lBQU07Ozs7WUFBVTs7Ozs7O0VBQ2pwRDs7Ozs7O0FBQ04iLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiU2VjdGlvbk1hc3Rlci5qc3giXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LHt1c2VFZmZlY3QsdXNlU3RhdGV9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IGFwaSB9IGZyb20gJy4vRXJwLmpzeCc7XG5pbXBvcnQgeyBJY29uIH0gZnJvbSAnLi9EYXNoYm9hcmRPdmVydmlldy5qc3gnO1xuaW1wb3J0IE1lc3NhZ2VEaWFsb2cse3VzZUNvbmZpcm0sdmFsaWRhdGlvbk1lc3NhZ2V9IGZyb20gJy4vTWVzc2FnZURpYWxvZy5qc3gnO1xuaW1wb3J0ICcuL3NlY3Rpb24tbWFzdGVyLmNzcyc7XG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBTZWN0aW9uTWFzdGVyKCl7XG4gY29uc3QgW3Jvd3Msc2V0Um93c109dXNlU3RhdGUoW10pLFt2YWx1ZXMsc2V0VmFsdWVzXT11c2VTdGF0ZSh7fSksW2VkaXRpbmcsc2V0RWRpdGluZ109dXNlU3RhdGUobnVsbCk7XG4gY29uc3QgW3F1ZXJ5LHNldFF1ZXJ5XT11c2VTdGF0ZSgnJyksW2FzY2VuZGluZyxzZXRBc2NlbmRpbmddPXVzZVN0YXRlKHRydWUpLFttZXNzYWdlLHNldE1lc3NhZ2VdPXVzZVN0YXRlKCcnKTtcbiBjb25zdCBbYnVzeSxzZXRCdXN5XT11c2VTdGF0ZShmYWxzZSksW2xvYWRpbmcsc2V0TG9hZGluZ109dXNlU3RhdGUodHJ1ZSk7XG4gY29uc3Qge2NvbmZpcm0sY29uZmlybWF0aW9ufT11c2VDb25maXJtKCk7XG4gY29uc3QgcmVmcmVzaD0oKT0+YXBpKCcvYXBpL2FkbWluL2NvdXJzZS1tb2R1bGVzL3NlY3Rpb24tbWFzdGVycycpLnRoZW4oZGF0YT0+c2V0Um93cyhkYXRhLm1hc3RlcnMpKTtcbiB1c2VFZmZlY3QoKCk9PntyZWZyZXNoKCkuY2F0Y2goZXJyb3I9PnNldE1lc3NhZ2UoZXJyb3IubWVzc2FnZSkpLmZpbmFsbHkoKCk9PnNldExvYWRpbmcoZmFsc2UpKTt9LFtdKTtcbiBmdW5jdGlvbiBjYW5jZWwoKXtzZXRWYWx1ZXMoe30pO3NldEVkaXRpbmcobnVsbCk7fVxuIGFzeW5jIGZ1bmN0aW9uIHNhdmUoZXZlbnQpe2V2ZW50LnByZXZlbnREZWZhdWx0KCk7c2V0QnVzeSh0cnVlKTt0cnl7YXdhaXQgYXBpKGAvYXBpL2FkbWluL2NvdXJzZS1tb2R1bGVzL3NlY3Rpb24tbWFzdGVycyR7ZWRpdGluZz9gLyR7ZWRpdGluZ31gOicnfWAse21ldGhvZDplZGl0aW5nPydQQVRDSCc6J1BPU1QnLGJvZHk6SlNPTi5zdHJpbmdpZnkodmFsdWVzKX0pO2F3YWl0IHJlZnJlc2goKTtjYW5jZWwoKTtzZXRNZXNzYWdlKGVkaXRpbmc/J1NlY3Rpb24gTWFzdGVyIHVwZGF0ZWQuJzonU2VjdGlvbiBNYXN0ZXIgY3JlYXRlZC4nKTt9Y2F0Y2goZXJyb3Ipe3NldE1lc3NhZ2UoZXJyb3IubWVzc2FnZSk7fWZpbmFsbHl7c2V0QnVzeShmYWxzZSk7fX1cbiBhc3luYyBmdW5jdGlvbiByZW1vdmUocm93KXtpZighYXdhaXQgY29uZmlybShgRGVsZXRlIFNlY3Rpb24gTWFzdGVyICR7cm93LnNlY3Rpb25fbWFzdGVyX25hbWV9PyBNYXN0ZXJzIHVzZWQgYnkgU2VjdGlvbnMgY2Fubm90IGJlIGRlbGV0ZWQuYCkpcmV0dXJuO3NldEJ1c3kodHJ1ZSk7dHJ5e2F3YWl0IGFwaShgL2FwaS9hZG1pbi9jb3Vyc2UtbW9kdWxlcy9zZWN0aW9uLW1hc3RlcnMvJHtyb3cuc2VjdGlvbl9tYXN0ZXJfaWR9YCx7bWV0aG9kOidERUxFVEUnfSk7YXdhaXQgcmVmcmVzaCgpO2lmKGVkaXRpbmc9PT1yb3cuc2VjdGlvbl9tYXN0ZXJfaWQpY2FuY2VsKCk7c2V0TWVzc2FnZSgnU2VjdGlvbiBNYXN0ZXIgZGVsZXRlZC4nKTt9Y2F0Y2goZXJyb3Ipe3NldE1lc3NhZ2UoZXJyb3IubWVzc2FnZSk7fWZpbmFsbHl7c2V0QnVzeShmYWxzZSk7fX1cbiBmdW5jdGlvbiBlZGl0KHJvdyl7c2V0RWRpdGluZyhyb3cuc2VjdGlvbl9tYXN0ZXJfaWQpO3NldFZhbHVlcyh7c2VjdGlvbl9tYXN0ZXJfbmFtZTpyb3cuc2VjdGlvbl9tYXN0ZXJfbmFtZSxpc19zdGF0dXM6cm93LmlzX3N0YXR1c30pO2RvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoJy5zZWN0aW9uLW1hc3Rlci1lZGl0b3InKT8uc2Nyb2xsSW50b1ZpZXcoe2JlaGF2aW9yOidzbW9vdGgnLGJsb2NrOidzdGFydCd9KTt9XG4gY29uc3QgdmlzaWJsZT1yb3dzLmZpbHRlcihyb3c9PlN0cmluZyhyb3cuc2VjdGlvbl9tYXN0ZXJfbmFtZXx8JycpLnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMocXVlcnkudG9Mb3dlckNhc2UoKSkpLnNvcnQoKGEsYik9Pihhc2NlbmRpbmc/MTotMSkqU3RyaW5nKGEuc2VjdGlvbl9tYXN0ZXJfbmFtZSkubG9jYWxlQ29tcGFyZShTdHJpbmcoYi5zZWN0aW9uX21hc3Rlcl9uYW1lKSkpO1xuIHJldHVybiA8ZGl2IGNsYXNzTmFtZT1cInNlY3Rpb24tbWFzdGVyLXBhZ2VcIj57Y29uZmlybWF0aW9ufTxNZXNzYWdlRGlhbG9nIG1lc3NhZ2U9e21lc3NhZ2V9IG9uRGlzbWlzcz17KCk9PnNldE1lc3NhZ2UoJycpfS8+XG4gIDxzZWN0aW9uIGNsYXNzTmFtZT1cInNlY3Rpb24tbWFzdGVyLWVkaXRvclwiPjxoMj57ZWRpdGluZz8nRWRpdCc6J0FkZCd9IFNlY3Rpb24gTWFzdGVyPC9oMj48Zm9ybSBvblN1Ym1pdD17c2F2ZX0gb25JbnZhbGlkPXtldmVudD0+dmFsaWRhdGlvbk1lc3NhZ2UoZXZlbnQsc2V0TWVzc2FnZSl9PjxmaWVsZHNldCBkaXNhYmxlZD17YnVzeXx8bG9hZGluZ30+PGxhYmVsPlNlY3Rpb24gTWFzdGVyIE5hbWUgKjxpbnB1dCByZXF1aXJlZCBtYXhMZW5ndGg9ezUwfSBwbGFjZWhvbGRlcj1cIlNlY3Rpb24gTWFzdGVyIE5hbWVcIiB2YWx1ZT17dmFsdWVzLnNlY3Rpb25fbWFzdGVyX25hbWV8fCcnfSBvbkNoYW5nZT17ZXZlbnQ9PnNldFZhbHVlcyhwcmV2aW91cz0+KHsuLi5wcmV2aW91cyxzZWN0aW9uX21hc3Rlcl9uYW1lOmV2ZW50LnRhcmdldC52YWx1ZS50b1VwcGVyQ2FzZSgpfSkpfS8+PC9sYWJlbD57ZWRpdGluZyYmPGxhYmVsIGNsYXNzTmFtZT1cIm1hc3Rlci1zdGF0dXMtZmllbGRcIj5TdGF0dXM8c2VsZWN0IHZhbHVlPXt2YWx1ZXMuaXNfc3RhdHVzPz8xfSBvbkNoYW5nZT17ZXZlbnQ9PnNldFZhbHVlcyhwcmV2aW91cz0+KHsuLi5wcmV2aW91cyxpc19zdGF0dXM6TnVtYmVyKGV2ZW50LnRhcmdldC52YWx1ZSl9KSl9PjxvcHRpb24gdmFsdWU9XCIxXCI+QWN0aXZlPC9vcHRpb24+PG9wdGlvbiB2YWx1ZT1cIjBcIj5JbmFjdGl2ZTwvb3B0aW9uPjwvc2VsZWN0PjwvbGFiZWw+fTxkaXYgY2xhc3NOYW1lPVwic2VjdGlvbi1tYXN0ZXItZm9ybS1hY3Rpb25zXCI+PGJ1dHRvbj57YnVzeT8nU2F2aW5n4oCmJzplZGl0aW5nPydVcGRhdGUnOidDcmVhdGUnfTwvYnV0dG9uPjxidXR0b24gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9e2NhbmNlbH0+Q2FuY2VsPC9idXR0b24+PC9kaXY+PC9maWVsZHNldD48L2Zvcm0+PC9zZWN0aW9uPlxuICA8c2VjdGlvbiBjbGFzc05hbWU9XCJzZWN0aW9uLW1hc3Rlci1saXN0XCI+PGgyPlNlY3Rpb24gTWFzdGVyPC9oMj48ZGl2IGNsYXNzTmFtZT1cInNlY3Rpb24tbWFzdGVyLXRhYmxlIHRhYmxlLXNjcm9sbFwiPjx0YWJsZT48dGhlYWQ+PHRyPjx0aD4jPC90aD48dGggYXJpYS1zb3J0PXthc2NlbmRpbmc/J2FzY2VuZGluZyc6J2Rlc2NlbmRpbmcnfT48YnV0dG9uIGNsYXNzTmFtZT1cIm1hc3Rlci1zb3J0XCIgb25DbGljaz17KCk9PnNldEFzY2VuZGluZyh2YWx1ZT0+IXZhbHVlKX0+U2VjdGlvbiBNYXN0ZXIgTmFtZSB7YXNjZW5kaW5nPyfihqcnOifihqUnfTwvYnV0dG9uPjwvdGg+PHRoPlN0YXR1czwvdGg+PHRoPkFjdGlvbnM8L3RoPjwvdHI+PHRyPjx0aC8+PHRoPjxpbnB1dCBhcmlhLWxhYmVsPVwiRmlsdGVyIFNlY3Rpb24gTWFzdGVyIE5hbWVcIiB2YWx1ZT17cXVlcnl9IG9uQ2hhbmdlPXtldmVudD0+c2V0UXVlcnkoZXZlbnQudGFyZ2V0LnZhbHVlKX0vPjwvdGg+PHRoLz48dGg+PGJ1dHRvbiBjbGFzc05hbWU9XCJtYXN0ZXItY2xlYXJcIiBvbkNsaWNrPXsoKT0+c2V0UXVlcnkoJycpfT5DbGVhcjwvYnV0dG9uPjwvdGg+PC90cj48L3RoZWFkPjx0Ym9keT57dmlzaWJsZS5tYXAoKHJvdyxpbmRleCk9Pjx0ciBrZXk9e3Jvdy5zZWN0aW9uX21hc3Rlcl9pZH0+PHRkPntpbmRleCsxfTwvdGQ+PHRkPntyb3cuc2VjdGlvbl9tYXN0ZXJfbmFtZX08L3RkPjx0ZD48c3BhbiBjbGFzc05hbWU9e3Jvdy5pc19zdGF0dXM9PT0xPydtYXN0ZXItYWN0aXZlJzonbWFzdGVyLWluYWN0aXZlJ30gcm9sZT1cImltZ1wiIGFyaWEtbGFiZWw9e3Jvdy5pc19zdGF0dXM9PT0xPydBY3RpdmUnOidJbmFjdGl2ZSd9PjxJY29uIG5hbWU9e3Jvdy5pc19zdGF0dXM9PT0xPydjaGVjayc6J2xvY2snfSBzaXplPXsyMX0vPjwvc3Bhbj48L3RkPjx0ZD48ZGl2IGNsYXNzTmFtZT1cInNlY3Rpb24tbWFzdGVyLXJvdy1hY3Rpb25zXCI+PGJ1dHRvbiB0aXRsZT1cIlZpZXdcIiBhcmlhLWxhYmVsPXtgVmlldyAke3Jvdy5zZWN0aW9uX21hc3Rlcl9uYW1lfWB9IG9uQ2xpY2s9eygpPT5zZXRNZXNzYWdlKGBTZWN0aW9uIE1hc3RlcjogJHtyb3cuc2VjdGlvbl9tYXN0ZXJfbmFtZX1cXG5TdGF0dXM6ICR7cm93LmlzX3N0YXR1cz09PTE/J0FjdGl2ZSc6J0luYWN0aXZlJ31gKX0+PEljb24gbmFtZT1cInZpZXdcIiBzaXplPXsxNn0vPjwvYnV0dG9uPjxidXR0b24gdGl0bGU9XCJFZGl0XCIgYXJpYS1sYWJlbD17YEVkaXQgJHtyb3cuc2VjdGlvbl9tYXN0ZXJfbmFtZX1gfSBkaXNhYmxlZD17YnVzeX0gb25DbGljaz17KCk9PmVkaXQocm93KX0+PEljb24gbmFtZT1cImVkaXRcIiBzaXplPXsxNn0vPjwvYnV0dG9uPjxidXR0b24gdGl0bGU9XCJEZWxldGVcIiBhcmlhLWxhYmVsPXtgRGVsZXRlICR7cm93LnNlY3Rpb25fbWFzdGVyX25hbWV9YH0gZGlzYWJsZWQ9e2J1c3l9IG9uQ2xpY2s9eygpPT5yZW1vdmUocm93KX0+PEljb24gbmFtZT1cImRlbGV0ZVwiIHNpemU9ezE2fS8+PC9idXR0b24+PC9kaXY+PC90ZD48L3RyPil9eyF2aXNpYmxlLmxlbmd0aCYmPHRyPjx0ZCBjb2xTcGFuPVwiNFwiPntsb2FkaW5nPydMb2FkaW5nIHNlY3Rpb24gbWFzdGVyc+KApic6cm93cy5sZW5ndGg/J05vIG1hdGNoaW5nIHNlY3Rpb24gbWFzdGVycy4nOidObyBzZWN0aW9uIG1hc3RlcnMgeWV0Lid9PC90ZD48L3RyPn08L3Rib2R5PjwvdGFibGU+PC9kaXY+PC9zZWN0aW9uPlxuIDwvZGl2Pjtcbn1cbiJdfQ==

@@ -1,0 +1,21 @@
+:is(.assign-section-page,.section-definitions-page,.section-master-page){max-width:1100px;width:100%}
+.erp :is(.assign-section-page,.section-definitions-page,.section-master-page) h2{font-size:16px;color:#c62828;font-weight:400;margin:14px 0 12px}
+:is(.assign-section-editor,.section-definition-editor,.section-master-editor) form{padding:12px 14px}
+:is(.assign-section-fields,.section-definition-fields){gap:10px 16px}
+.erp :is(.assign-section-fields,.section-definition-fields,.section-master-editor) label{color:#000;font-size:11px}
+.section-definition-fields .definition-field-label{display:block;position:static;width:auto;height:auto;margin:0 0 5px;padding:0;overflow:visible;clip-path:none;white-space:normal;color:#000;font-size:11px;font-weight:600}
+:is(.assign-section-fields,.section-definition-fields,.section-master-editor) input,:is(.assign-section-fields,.section-definition-fields,.section-master-editor) select{height:32px;border-radius:999px;font-size:11px;margin-top:5px;padding:6px 13px}
+:is(.assign-section-actions,.section-definition-actions,.section-master-form-actions){gap:12px;margin-top:10px}
+.erp :is(.assign-section-actions,.section-definition-actions,.section-master-form-actions) button{width:135px;min-height:31px;padding:7px 12px;font-size:11px;background:#c62828;color:#fff}
+.erp :is(.assign-section-actions,.section-definition-actions,.section-master-form-actions) button:hover{background:#a92020}
+.erp :is(.assign-section-actions,.section-definition-actions,.section-master-form-actions) button+button{background:#fafafa;border:1px solid #ddd;color:#768391}
+.erp :is(.assign-section-actions,.section-definition-actions,.section-master-form-actions) button+button:hover{background:#f1f1f1}
+:is(.assign-section-list,.section-definition-list,.section-master-list){margin-top:18px}
+:is(.assign-section-table,.section-definition-table,.section-master-table){padding:6px}
+.erp :is(.assign-section-table,.section-definition-table,.section-master-table) th,.erp :is(.assign-section-table,.section-definition-table,.section-master-table) td{padding:7px 9px;font-size:10px}
+:is(.assign-section-table,.section-definition-table,.section-master-table) th,.erp :is(.assign-clear,.section-sort,.section-clear-filters,.master-sort,.master-clear){color:#8b1e2d;font-size:10px}
+:is(.assign-section-table,.section-definition-table,.section-master-table) thead input,:is(.assign-section-table,.section-definition-table,.section-master-table) thead select{height:26px;border-radius:999px;font-size:10px;padding:4px 12px}
+.erp :is(.assignment-row-actions,.section-master-row-actions,.section-definition-row-actions) button{width:29px;height:28px;padding:5px;border:1px solid currentColor;border-radius:5px;background:#edf5fe;color:#1976c9}
+.erp :is(.assignment-row-actions,.section-master-row-actions) button:nth-child(2),.erp .section-definition-row-actions button:first-child{color:#16804c;background:#edf8f0}
+.erp :is(.assignment-row-actions,.section-master-row-actions) button:nth-child(3),.erp .section-definition-row-actions button:nth-child(2){color:#c62828;background:#ffefef}
+.erp :is(.assignment-row-actions,.section-master-row-actions,.section-definition-row-actions) button:focus-visible{outline:2px solid currentColor;outline-offset:2px}

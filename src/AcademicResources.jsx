@@ -1,0 +1,30 @@
+import StudentAttendance from './StudentAttendance.jsx';
+import TakeAttendance from './TakeAttendance.jsx';
+import VideoLectures from './VideoLectures.jsx';
+import NoteUploadReport from './NoteUploadReport.jsx';
+import LectureNotes from './LectureNotes.jsx';
+import LessonPlans from './LessonPlans.jsx';
+import CourseOutcomes from './CourseOutcomes.jsx';
+import PreferredBooks from './PreferredBooks.jsx';
+﻿import React,{useEffect,useState} from 'react';
+import {api} from './Erp.jsx';
+import {academicResources} from '../shared/academic-resources.mjs';
+import MessageDialog from './MessageDialog.jsx';
+import './academics.css';
+export default function AcademicResources({page,onNavigate}){
+ const [rows,setRows]=useState([]),[filters,setFilters]=useState({}),[loading,setLoading]=useState(true),[message,setMessage]=useState('');
+ const item=academicResources.find(item=>page==='academics-'+item.key);
+ useEffect(()=>{let active=true;setRows([]);setFilters({});setMessage('');setLoading(true);if(!item||['student-attendance','take-attendance','video-lecture','note-upload-report','lecture-notes','lesson-plan','course-outcome','preferred-books'].includes(item.key)){setLoading(false);return;}api('/api/admin/academics/'+item.key).then(data=>{if(active)setRows(data.records);}).catch(error=>{if(active)setMessage(error.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[item?.key]);
+ if(item?.key==='student-attendance')return <StudentAttendance onNavigate={onNavigate}/>;
+ if(item?.key==='take-attendance')return <TakeAttendance onNavigate={onNavigate}/>;
+ if(item?.key==='video-lecture')return <VideoLectures/>;
+ if(item?.key==='note-upload-report')return <NoteUploadReport/>;
+ if(item?.key==='lecture-notes')return <LectureNotes onNavigate={onNavigate}/>;
+ if(item?.key==='lesson-plan')return <LessonPlans onNavigate={onNavigate}/>;
+ if(item?.key==='course-outcome')return <CourseOutcomes/>;
+ if(item?.key==='preferred-books')return <PreferredBooks/>;
+ if(!item)return <section className="academics-image-page"><img src="/abitaca.webp" alt="Academics"/></section>;
+ const display=(row,key)=>row[key]??'Not set';
+ const visible=rows.filter(row=>Object.entries(filters).every(([key,value])=>String(display(row,key)).toLowerCase().includes(value.trim().toLowerCase())));
+ return <section className="academic-page"><MessageDialog message={message} onDismiss={()=>setMessage('')}/><h2 className="academic-page-heading">{item.label}</h2><div className="academic-table table-scroll"><table><thead><tr>{item.columns.map(([key,label])=><th key={key}>{label}</th>)}<th/></tr><tr>{item.columns.map(([key,label])=><th key={key}><input className="academic-control academic-resource-filter" aria-label={'Filter '+label} value={filters[key]||''} onChange={event=>setFilters(previous=>({...previous,[key]:event.target.value}))}/></th>)}<th><button className="academic-resource-clear" onClick={()=>setFilters({})}>Clear</button></th></tr></thead><tbody>{visible.map(row=><tr key={row[item.id]}>{item.columns.map(([key])=><td key={key}>{String(display(row,key))}</td>)}<td/></tr>)}{!visible.length&&<tr><td colSpan={item.columns.length+1}>{loading?'Loading records…':message?'Unable to load records.':rows.length?'No matching records.':'No records yet.'}</td></tr>}</tbody></table></div></section>;
+}

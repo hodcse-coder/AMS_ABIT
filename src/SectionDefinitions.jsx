@@ -1,0 +1,33 @@
+import React,{useEffect,useState} from 'react';
+import { api } from './Erp.jsx';
+import { Icon } from './DashboardOverview.jsx';
+import MessageDialog,{useConfirm,validationMessage} from './MessageDialog.jsx';
+import './section-definitions.css';
+export default function SectionDefinitions({courses}){
+ const [rows,setRows]=useState([]),[masters,setMasters]=useState([]),[values,setValues]=useState({});
+ const [editing,setEditing]=useState(null),[filters,setFilters]=useState({}),[ascending,setAscending]=useState(true);
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
+ const {confirm,confirmation}=useConfirm();
+ async function refresh(){const [sections,master]=await Promise.all([api('/api/admin/course-modules/section-definitions'),api('/api/admin/course-modules/section-masters')]);setRows(sections.definitions);setMasters(master.masters);}
+ useEffect(()=>{refresh().catch(error=>setMessage(error.message)).finally(()=>setLoading(false));},[]);
+ const input=(key,value)=>setValues(previous=>({...previous,[key]:value}));
+ function clear(){setEditing(null);setValues({});}
+ async function save(event){event.preventDefault();setBusy(true);try{await api(`/api/admin/course-modules/section-definitions${editing?`/${editing}`:''}`,{method:editing?'PATCH':'POST',body:JSON.stringify(values)});await refresh();clear();setMessage(editing?'Section updated successfully.':'Section created successfully.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ function edit(row){setEditing(row.sid);setValues({section_name:row.section_name,section_master:row.section_master,rel_course:row.rel_course||'',rel_coursefecth:row.rel_coursefecth||''});document.querySelector('.section-definition-editor')?.scrollIntoView({behavior:'smooth',block:'start'});}
+ async function remove(row){if(!await confirm(`Delete Section ${row.section_name}? Assigned sections cannot be deleted.`))return;setBusy(true);try{await api(`/api/admin/course-modules/section-definitions/${row.sid}`,{method:'DELETE'});await refresh();if(editing===row.sid)clear();setMessage('Section deleted.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ const courseOptions=courses.map(course=><option key={course.course_id} value={course.course_id}>{course.course_name}</option>);
+ const visible=rows.filter(row=>(!filters.section_name||String(row.section_name||'').toLowerCase().includes(filters.section_name.toLowerCase()))&&['section_master','rel_course','rel_coursefecth'].every(key=>!filters[key]||String(row[key]||0)===filters[key])).sort((a,b)=>(ascending?1:-1)*String(a.section_name).localeCompare(String(b.section_name)));
+ const filterSelect=(key,label,options)=><select aria-label={`Filter ${label}`} value={filters[key]||''} onChange={event=>setFilters(previous=>({...previous,[key]:event.target.value}))}><option value="">All</option><option value="0">(not set)</option>{options}</select>;
+ return <div className="section-definitions-page">{confirmation}<MessageDialog message={message} onDismiss={()=>setMessage('')}/>
+  <section className="section-definition-editor"><h2>{editing?'Edit':'Add'} Section</h2><form onSubmit={save} onInvalid={event=>validationMessage(event,setMessage)}><fieldset disabled={busy||loading}><div className="section-definition-fields">
+   <label><span className="definition-field-label">Section Name</span><input required maxLength={50} placeholder="Section Name" value={values.section_name||''} onChange={event=>input('section_name',event.target.value.toUpperCase())}/></label>
+   <label><span className="definition-field-label">Section Master</span><select value={values.section_master||''} onChange={event=>input('section_master',event.target.value)}><option value="">--- Select Section Master ---</option>{masters.map(master=><option key={master.section_master_id} value={master.section_master_id}>{master.section_master_name}</option>)}</select></label>
+   <label><span className="definition-field-label">Course (For Admission Form)</span><select value={values.rel_course||''} onChange={event=>input('rel_course',event.target.value)}><option value="">--- Select Course (For Admission Form) ---</option>{courseOptions}</select></label>
+   <label><span className="definition-field-label">Course</span><select value={values.rel_coursefecth||''} onChange={event=>input('rel_coursefecth',event.target.value)}><option value="">--- Select Course ---</option>{courseOptions}</select></label>
+  </div><div className="section-definition-actions"><button>{busy?'Saving…':editing?'Update':'Create'}</button><button type="button" onClick={clear}>Clear</button></div></fieldset></form></section>
+  <section className="section-definition-list"><h2>Manage Section</h2><div className="section-definition-table table-scroll"><table><thead><tr><th>#</th><th aria-sort={ascending?'ascending':'descending'}><button className="section-sort" onClick={()=>setAscending(value=>!value)}>Section Name {ascending?'↧':'↥'}</button></th><th>Section Master</th><th>Course (Admission Form)</th><th>Course</th><th>Actions</th></tr><tr><th/><th><input aria-label="Filter Section Name" value={filters.section_name||''} onChange={event=>setFilters(previous=>({...previous,section_name:event.target.value}))}/></th><th>{filterSelect('section_master','Section Master',masters.map(master=><option key={master.section_master_id} value={master.section_master_id}>{master.section_master_name}</option>))}</th><th>{filterSelect('rel_course','Admission Form Course',courseOptions)}</th><th>{filterSelect('rel_coursefecth','Course',courseOptions)}</th><th><button className="section-clear-filters" onClick={()=>setFilters({})}>Clear</button></th></tr></thead><tbody>
+  {visible.map((row,index)=><tr key={row.sid}><td>{index+1}</td><td>{row.section_name}</td><td>{row.section_master_name||'(not set)'}</td><td>{row.admission_course_name||'(not set)'}</td><td>{row.assigned_course_name||'(not set)'}</td><td><div className="section-definition-row-actions"><button title="Edit" aria-label={`Edit ${row.section_name}`} disabled={busy} onClick={()=>edit(row)}><Icon name="edit" size={16}/></button><button title="Delete" aria-label={`Delete ${row.section_name}`} disabled={busy} onClick={()=>remove(row)}><Icon name="delete" size={16}/></button></div></td></tr>)}
+  {!visible.length&&<tr><td colSpan="6">{loading?'Loading sections…':rows.length?'No matching sections.':'No sections yet.'}</td></tr>}
+  </tbody></table></div></section>
+ </div>;
+}

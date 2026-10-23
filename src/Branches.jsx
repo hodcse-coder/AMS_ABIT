@@ -1,0 +1,31 @@
+﻿import React,{useEffect,useState} from 'react';
+import {api} from './Erp.jsx';
+import {Icon} from './DashboardOverview.jsx';
+import MessageDialog,{validationMessage} from './MessageDialog.jsx';
+import './academics.css';
+import './branches.css';
+const empty=()=>({course_id:'',branch_code:'',branch_alias:'',branch_name:'',is_active:true});
+export default function Branches({courses,loadingCourses}){
+ const [editorOpen,setEditorOpen]=useState(false);
+ const [values,setValues]=useState(empty),[rows,setRows]=useState([]),[editing,setEditing]=useState(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[message,setMessage]=useState(''),[filters,setFilters]=useState({});
+ async function refresh(){const data=await api('/api/admin/course-modules/branches');setRows(data.branches);}
+ useEffect(()=>{refresh().catch(error=>setMessage(error.message)).finally(()=>setLoading(false));},[]);
+ const field=(key,value)=>setValues(previous=>({...previous,[key]:value}));
+ const valid=values.course_id&&['branch_code','branch_name','branch_alias'].every(key=>values[key].trim());
+ function cancel(){setValues(empty());setEditing(null);setEditorOpen(false);}
+ async function save(event){event.preventDefault();if(!valid)return;setBusy(true);try{await api('/api/admin/course-modules/branches'+(editing?'/'+editing:''),{method:editing?'PATCH':'POST',body:JSON.stringify(values)});await refresh();cancel();setMessage(editing?'Branch updated successfully.':'Branch created successfully.');}catch(error){setMessage(error.message);}finally{setBusy(false);}}
+ function edit(row){setEditorOpen(true);setValues({course_id:row.course_id,branch_code:row.branch_code,branch_name:row.branch_name,branch_alias:row.branch_alias,is_active:row.is_active});setEditing(row.branch_id);}
+ useEffect(()=>{if(editorOpen)document.getElementById('branch-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editorOpen,editing]);
+ const filterField=(key,value)=>setFilters(previous=>({...previous,[key]:value}));
+ const visible=rows.filter(row=>Object.entries(filters).every(([key,value])=>!value||(key==='course_id'||key==='is_active'?String(row[key])===value:String(row[key]??'').toLowerCase().includes(value.trim().toLowerCase()))));
+ return <div className="academic-page branches-page"><MessageDialog message={message} onDismiss={()=>setMessage('')}/><section className="academic-card" id="branch-editor">
+ {editorOpen&&<><header className="branch-heading"><div><h2>{editing?'Edit':'Add'} Branch</h2></div></header>
+ <form onSubmit={save} onInvalid={event=>validationMessage(event,setMessage)}><fieldset disabled={busy||loadingCourses||loading}><div className="subject-fields">
+ <label className="academic-label subject-wide">Course Code <span>*</span><select required className="academic-control" value={values.course_id} onChange={event=>field('course_id',event.target.value)}><option value="">Select Course</option>{courses.map(course=><option key={course.course_id} value={course.course_id}>{course.course_code} – {course.course_name}</option>)}</select></label>
+ {['branch_name','branch_code','branch_alias'].map((key,index)=><label className={'academic-label'+(index===0?' subject-wide':'')} key={key}>{['Branch Name','Branch Code','Branch Alias'][index]} <span>*</span><input className="academic-control" required maxLength={[200,30,50][index]} placeholder={index===0?'e.g. Computer Science & Engineering':'e.g. CSE'} value={values[key]} onChange={event=>field(key,event.target.value.toUpperCase())}/></label>)}
+ <fieldset className="branch-status subject-wide"><legend>Status</legend>{[true,false].map(active=><label key={String(active)}><input type="radio" name="branch-status" checked={values.is_active===active} onChange={()=>field('is_active',active)}/>{active?'Active':'Inactive'}</label>)}</fieldset>
+ </div><div className="academic-buttons"><button className="academic-primary" disabled={!valid||busy}>{busy?'Saving…':editing?'Update Branch':'Create Branch'}</button><button type="button" onClick={cancel}>Cancel</button></div></fieldset></form></>}
+ <section className="academic-list"><div className="academic-list-heading"><h2>Branch List</h2>{!editorOpen&&<div className="academic-buttons"><button type="button" className="academic-primary" disabled={busy||loading||loadingCourses} aria-expanded={editorOpen} aria-controls="branch-editor" onClick={()=>{setValues(empty());setEditing(null);setEditorOpen(true);}}>Add Branch</button></div>}</div>
+ <div className="academic-table table-scroll"><table><thead><tr><th>Course</th><th>Branch Code</th><th>Branch Name</th><th>Status</th><th>Action</th></tr><tr className="branch-column-filters"><th><select className="academic-control" aria-label="Filter Course" value={filters.course_id||''} onChange={event=>filterField('course_id',event.target.value)}><option value="">All</option>{courses.map(course=><option key={course.course_id} value={course.course_id}>{course.course_code}</option>)}</select></th><th><input className="academic-control" aria-label="Search Branch Code" value={filters.branch_code||''} onChange={event=>filterField('branch_code',event.target.value)}/></th><th><input className="academic-control" aria-label="Search Branch Name" value={filters.branch_name||''} onChange={event=>filterField('branch_name',event.target.value)}/></th><th><select className="academic-control" aria-label="Filter Status" value={filters.is_active||''} onChange={event=>filterField('is_active',event.target.value)}><option value="">All</option><option value="true">Active</option><option value="false">Inactive</option></select></th><th><button type="button" className="branch-filter-clear" onClick={()=>setFilters({})}>Clear</button></th></tr></thead><tbody>{visible.map(row=><tr key={row.branch_id}><td>{row.course_code}</td><td>{row.branch_code}</td><td>{row.branch_name}</td><td className={row.is_active?'branch-active':'branch-inactive'}>{row.is_active?'Active':'Inactive'}</td><td><button className="branch-edit" disabled={busy} onClick={()=>edit(row)} title="Edit" aria-label={'Edit '+row.branch_name}><Icon name="edit" size={16}/></button></td></tr>)}{!visible.length&&<tr><td colSpan="5">{loading?'Loading branches…':rows.length?'No matching branches.':'No branches yet.'}</td></tr>}</tbody></table></div></section>
+ </section></div>;
+}
